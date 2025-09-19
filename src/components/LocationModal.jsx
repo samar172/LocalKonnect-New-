@@ -5,6 +5,8 @@ import { popularCities, allCities } from '../assets/data/cities';
 
 const LocationModal = ({ isOpen, onClose, setSelectedLocation }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [detecting, setDetecting] = useState(false);
+  const [detectError, setDetectError] = useState('');
 
   const handleCitySelect = (city) => {
     setSelectedLocation(city);
@@ -32,6 +34,40 @@ const LocationModal = ({ isOpen, onClose, setSelectedLocation }) => {
   }, [filteredCities]);
   
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+
+  const handleUseCurrentLocation = async () => {
+    setDetectError('');
+    if (!navigator.geolocation) {
+      setDetectError('Geolocation is not supported by your browser');
+      return;
+    }
+    setDetecting(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+        // Reverse geocode using OpenStreetMap Nominatim
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`;
+        const res = await fetch(url, {
+          headers: {
+            'Accept-Language': 'en',
+          },
+        });
+        if (!res.ok) throw new Error('Failed to fetch location details');
+        const data = await res.json();
+        const addr = data.address || {};
+        const cityName = addr.city || addr.town || addr.village || addr.suburb || addr.state || addr.county || 'Current Location';
+        setSelectedLocation(cityName);
+        setDetecting(false);
+        onClose();
+      } catch (e) {
+        setDetecting(false);
+        setDetectError(e.message || 'Unable to detect location');
+      }
+    }, (err) => {
+      setDetecting(false);
+      setDetectError(err.message || 'Permission denied for geolocation');
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+  };
 
   return (
     <AnimatePresence>
@@ -69,15 +105,31 @@ const LocationModal = ({ isOpen, onClose, setSelectedLocation }) => {
                   placeholder="Search city, area or locality"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-secondary"
                 />
               </div>
 
               {/* Use Current Location */}
-              <button className="flex items-center space-x-2 text-red-600 font-medium mb-6 hover:text-red-800">
-                <Crosshair className="w-5 h-5" />
-                <span>Use Current Location</span>
+              <button
+                onClick={handleUseCurrentLocation}
+                disabled={detecting}
+                className="flex items-center space-x-2 text-brand-secondary font-medium mb-2 hover:text-brand-secondary/80 disabled:text-gray-400"
+              >
+                {detecting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span>Detecting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Crosshair className="w-5 h-5" />
+                    <span>Use Current Location</span>
+                  </>
+                )}
               </button>
+              {detectError && (
+                <p className="text-sm text-red-600 mb-4">{detectError}</p>
+              )}
 
               {/* Popular Cities */}
               <div className="mb-8">

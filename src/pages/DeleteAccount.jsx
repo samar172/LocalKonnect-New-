@@ -1,97 +1,104 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertTriangle, Send } from 'lucide-react';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
 
 const DeleteAccountPage = () => {
-  const [confirmationText, setConfirmationText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  
-  const requiredText = 'DELETE';
-  const isButtonDisabled = confirmationText !== requiredText || isDeleting;
+  const [formData, setFormData] = useState({
+    email: '',
+    phone: '',
+    reason: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleDelete = async (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isButtonDisabled) return;
-
-    setIsDeleting(true);
+    setIsSubmitting(true);
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsDeleting(false);
-    alert('Your account has been permanently deleted.');
-    // In a real app, you would redirect the user, e.g., to the homepage
-    // navigate('/');
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    setIsSubmitting(false);
+    setIsSubmitted(true);
+    setFormData({ email: '', phone: '', reason: '' });
+    setTimeout(() => setIsSubmitted(false), 5000);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
       <Header />
-      <main className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 rounded-2xl shadow-xl"
-        >
-          <div>
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-              <AlertTriangle className="h-6 w-6 text-red-600" aria-hidden="true" />
-            </div>
-            <div className="mt-3 text-center sm:mt-5">
-              <h2 className="text-2xl leading-6 font-extrabold text-gray-900">
-                Delete Your Account
-              </h2>
-              <div className="mt-2">
-                <p className="text-sm text-gray-500">
-                  This action is permanent and cannot be undone. All your data, including event history and personal information, will be permanently erased.
+      <main className="flex-1 py-16 sm:py-24">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-10"
+          >
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 tracking-tight">
+              Request Account Deletion
+            </h1>
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-600">
+              Please provide your contact details and the reason for deletion. Our team will process your request promptly.
+            </p>
+          </motion.div>
+
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-brand-secondary/10 border-b border-brand-secondary/20 p-6 sm:p-8 flex items-start gap-4">
+              <div className="h-10 w-10 rounded-full bg-brand-secondary/10 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-brand-secondary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-brand-secondary">Important</h2>
+                <p className="text-sm text-brand-secondary mt-1">
+                  Deleting your account is permanent and cannot be undone. Please ensure you've backed up any important information.
                 </p>
               </div>
             </div>
-          </div>
-          
-          <form className="space-y-6" onSubmit={handleDelete}>
-            <div>
-              <label htmlFor="confirmation" className="block text-sm font-medium text-gray-700">
-                To confirm, please type "<strong>{requiredText}</strong>" in the box below.
-              </label>
-              <div className="mt-1">
-                <input
-                  id="confirmation"
-                  name="confirmation"
-                  type="text"
-                  autoComplete="off"
-                  required
-                  value={confirmationText}
-                  onChange={(e) => setConfirmationText(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-                />
-              </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isButtonDisabled}
-                className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    <span>Deleting...</span>
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="w-5 h-5 mr-2" />
-                    Delete My Account
-                  </>
+            <div className="p-8 sm:p-10">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
+                  <input type="email" name="email" id="email" required value={formData.email} onChange={handleChange} placeholder="samar@example.com" className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-brand-secondary focus:border-brand-secondary" />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone</label>
+                  <input type="tel" name="phone" id="phone" required value={formData.phone} onChange={handleChange} placeholder="+91-9876543210" className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-brand-secondary focus:border-brand-secondary" />
+                </div>
+                <div>
+                  <label htmlFor="reason" className="block text-sm font-medium text-gray-700">Reason for deletion</label>
+                  <textarea name="reason" id="reason" rows="4" required value={formData.reason} onChange={handleChange} placeholder="I no longer use this service" className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-brand-secondary focus:border-brand-secondary"></textarea>
+                </div>
+                <div>
+                  <button type="submit" disabled={isSubmitting} className="w-full flex justify-center items-center py-3 px-6 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-brand-secondary hover:bg-brand-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-secondary disabled:bg-gray-400">
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-5 h-5 mr-2" />
+                        Request Deletion
+                      </>
+                    )}
+                  </button>
+                </div>
+                {isSubmitted && (
+                  <div className="text-center p-3 bg-green-100 border border-green-200 text-green-800 rounded-lg">
+                    Your request has been received. We will reach out to confirm and process the deletion.
+                  </div>
                 )}
-              </button>
+              </form>
             </div>
-          </form>
-        </motion.div>
+          </div>
+        </div>
       </main>
-      <Footer />
     </div>
   );
 };

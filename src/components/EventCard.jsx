@@ -27,20 +27,20 @@ const EventCard = ({ event, index }) => {
           </div>
 
           {/* Content */}
-          <div className="p-3">
-            <p className="text-xs font-semibold text-red-600 truncate">
+          <div className="p-3 lg:p-4">
+            <p className="text-xs lg:text-sm font-semibold text-blue-700 truncate">
               {formattedDateTime}
             </p>
 
-            <h3 className="text-sm font-semibold text-gray-800 truncate mt-1">
+            <h3 className="text-sm lg:text-base font-semibold text-gray-800 truncate mt-1">
               {event.title}
             </h3>
 
-            <p className="text-xs text-gray-600 truncate">
+            <p className="text-xs lg:text-sm text-gray-600 truncate">
               {event.venue}, {event.location}
             </p>
 
-            <p className="text-xs text-gray-600 mt-1">
+            <p className="text-xs lg:text-sm text-gray-600 mt-1">
               ₹{event.price} onwards
             </p>
           </div>

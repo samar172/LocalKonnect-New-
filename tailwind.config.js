@@ -12,6 +12,7 @@ module.exports = {
         brand: {
           primary: '#1a1a1a', // Dark Gray / Black
           accent: '#333333', // Lighter Dark Gray
+          secondary: "#0080ff",
         }
       },
       fontFamily: {
@@ -19,5 +20,7 @@ module.exports = {
       }
     }
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/line-clamp'),
+  ],
 };

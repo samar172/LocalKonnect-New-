@@ -35,15 +35,15 @@ const CategoryFilter = () => {
                 onClick={() => setSelectedCategory(category.id)}
                 className={`flex-shrink-0 flex flex-col items-center p-2 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border-2 transition-all duration-300 min-w-[90px] sm:min-w-[100px] md:min-w-[120px] mx-1 ${
                   isSelected
-                    ? 'border-red-500 bg-red-50 shadow-md transform scale-[1.02] sm:scale-105'
+                    ? 'border-brand-secondary bg-brand-secondary/10 shadow-md transform scale-[1.02] sm:scale-105'
                     : 'border-gray-200 hover:border-gray-300 hover:shadow-sm sm:hover:shadow-md'
                 }`}
               >
-                <div className={`p-2 sm:p-3 rounded-lg mb-1 sm:mb-2 ${isSelected ? 'bg-red-500 text-white' : category.color}`}>
+                <div className={`p-2 sm:p-3 rounded-lg mb-1 sm:mb-2 ${isSelected ? 'bg-brand-secondary text-white' : category.color}`}>
                   <Icon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6" />
                 </div>
                 <span className={`text-[11px] sm:text-xs md:text-sm font-medium text-center leading-tight ${
-                  isSelected ? 'text-red-600' : 'text-gray-700'
+                  isSelected ? 'text-brand-secondary' : 'text-gray-700'
                 }`}>
                   {category.name}
                 </span>

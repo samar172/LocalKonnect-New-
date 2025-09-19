@@ -16,6 +16,9 @@ export default defineConfig({
     // host: true, // This exposes the server on your local network
     host: "0.0.0.0",
     allowedHosts: [
+      "403f71b0d6ad.ngrok-free.app",
+      "d4afe9a97be6.ngrok-free.app",
+      "bfded70b8e30.ngrok-free.app",
     ],
   },
   build: {

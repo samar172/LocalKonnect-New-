@@ -42,18 +42,18 @@ const testimonials = [
 ];
 
 const TestimonialCard = ({ testimonial }) => (
-  <div className="flex-shrink-0 w-[300px] sm:w-[350px] md:w-[400px] bg-gray-800 rounded-2xl p-6 md:p-8 shadow-lg mx-3 md:mx-4">
-    <Quote className="w-8 h-8 md:w-10 md:h-10 text-red-500 mb-4" />
-    <p className="text-gray-300 mb-4 md:mb-6 text-base md:text-lg leading-relaxed">"{testimonial.quote}"</p>
+  <div className="flex-shrink-0 w-[300px] sm:w-[350px] md:w-[400px] bg-white rounded-2xl p-6 md:p-8 shadow-lg mx-3 md:mx-4 border border-gray-100">
+    <Quote className="w-8 h-8 md:w-10 md:h-10 text-brand-secondary mb-4" />
+    <p className="text-gray-700 mb-4 md:mb-6 text-base md:text-lg leading-relaxed">"{testimonial.quote}"</p>
     <div className="flex items-center">
       <img 
         src={testimonial.avatar} 
         alt={testimonial.name} 
-        className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-red-500" 
+        className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover border-2 border-brand-secondary" 
       />
       <div className="ml-3 md:ml-4">
-        <p className="font-bold text-white text-sm md:text-base">{testimonial.name}</p>
-        <p className="text-xs md:text-sm text-gray-400">{testimonial.location}</p>
+        <p className="font-bold text-gray-900 text-sm md:text-base">{testimonial.name}</p>
+        <p className="text-xs md:text-sm text-gray-500">{testimonial.location}</p>
       </div>
     </div>
   </div>
@@ -77,12 +77,12 @@ const Testimonials = () => {
   };
 
   return (
-    <section className="bg-gray-900 py-12 md:py-20 overflow-hidden">
+    <section className="bg-white py-12 md:py-20 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center mb-8 md:mb-12">
-        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 md:mb-4">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
           What our customers say about us
         </h2>
-        <p className="text-sm md:text-base text-gray-400 max-w-2xl mx-auto">
+        <p className="text-sm md:text-base text-gray-600 max-w-2xl mx-auto">
           Real stories from our vibrant community of event-goers and organizers.
         </p>
       </div>
@@ -96,8 +96,8 @@ const Testimonials = () => {
             <TestimonialCard key={index} testimonial={testimonial} />
           ))}
         </motion.div>
-        <div className="absolute inset-y-0 left-0 w-12 md:w-24 bg-gradient-to-r from-gray-900 to-transparent z-10"></div>
-        <div className="absolute inset-y-0 right-0 w-12 md:w-24 bg-gradient-to-l from-gray-900 to-transparent z-10"></div>
+        <div className="absolute inset-y-0 left-0 w-12 md:w-24 bg-gradient-to-r from-white to-transparent z-10"></div>
+        <div className="absolute inset-y-0 right-0 w-12 md:w-24 bg-gradient-to-l from-white to-transparent z-10"></div>
       </div>
     </section>
   );

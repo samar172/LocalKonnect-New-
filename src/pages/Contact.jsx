@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Send } from 'lucide-react';
 import Header from '../components/Header';
-import Footer from '../components/Footer';
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     subject: '',
     message: '',
   });
@@ -26,7 +26,7 @@ const ContactPage = () => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     setIsSubmitting(false);
     setIsSubmitted(true);
-    setFormData({ name: '', email: '', subject: '', message: '' });
+    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
     setTimeout(() => setIsSubmitted(false), 5000); // Reset submitted state after 5 seconds
   };
 
@@ -58,15 +58,15 @@ const ContactPage = () => {
               </p>
               <div className="space-y-6">
                 <div className="flex items-center space-x-4">
-                  <Phone className="w-6 h-6 text-red-400" />
-                  <a href="tel:+919571364889" className="text-lg hover:text-red-400 transition-colors">+91 9571364889</a>
+                  <Phone className="w-6 h-6 text-brand-secondary" />
+                  <a href="tel:+919571364889" className="text-lg hover:text-brand-secondary transition-colors">+91 9571364889</a>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <Mail className="w-6 h-6 text-red-400" />
-                  <a href="mailto:info@localkonnect.com" className="text-lg hover:text-red-400 transition-colors">info@localkonnect.com</a>
+                  <Mail className="w-6 h-6 text-brand-secondary" />
+                  <a href="mailto:info@localkonnect.com" className="text-lg hover:text-brand-secondary transition-colors">info@localkonnect.com</a>
                 </div>
                 <div className="flex items-start space-x-4">
-                  <MapPin className="w-6 h-6 text-red-400 mt-1" />
+                  <MapPin className="w-6 h-6 text-brand-secondary mt-1" />
                   <span className="text-lg">Bikaner, Rajasthan</span>
                 </div>
               </div>
@@ -77,22 +77,26 @@ const ContactPage = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full Name</label>
-                  <input type="text" name="name" id="name" required value={formData.name} onChange={handleChange} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" />
+                  <input type="text" name="name" id="name" required value={formData.name} onChange={handleChange} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-brand-secondary focus:border-brand-secondary" />
                 </div>
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email Address</label>
-                  <input type="email" name="email" id="email" required value={formData.email} onChange={handleChange} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" />
+                  <input type="email" name="email" id="email" required value={formData.email} onChange={handleChange} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-brand-secondary focus:border-brand-secondary" />
+                </div>
+                <div>
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone</label>
+                  <input type="tel" name="phone" id="phone" required value={formData.phone} onChange={handleChange} placeholder="+91-9876543210" className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-brand-secondary focus:border-brand-secondary" />
                 </div>
                 <div>
                   <label htmlFor="subject" className="block text-sm font-medium text-gray-700">Subject</label>
-                  <input type="text" name="subject" id="subject" required value={formData.subject} onChange={handleChange} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" />
+                  <input type="text" name="subject" id="subject" required value={formData.subject} onChange={handleChange} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-brand-secondary focus:border-brand-secondary" />
                 </div>
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-700">Message</label>
-                  <textarea name="message" id="message" rows="4" required value={formData.message} onChange={handleChange} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"></textarea>
+                  <textarea name="message" id="message" rows="4" required value={formData.message} onChange={handleChange} className="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-brand-secondary focus:border-brand-secondary"></textarea>
                 </div>
                 <div>
-                  <button type="submit" disabled={isSubmitting} className="w-full flex justify-center items-center py-3 px-6 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400">
+                  <button type="submit" disabled={isSubmitting} className="w-full flex justify-center items-center py-3 px-6 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-brand-secondary hover:bg-brand-secondary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-secondary disabled:bg-gray-400">
                     {isSubmitting ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
@@ -116,7 +120,6 @@ const ContactPage = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

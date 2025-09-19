@@ -91,7 +91,7 @@ const EventGrid = () => {
     <section id="event-grid-section" className="bg-white py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Events Section */}
-        <div className="mb-16">
+        <div className="mb-10">
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-1">
@@ -163,8 +163,8 @@ const EventGrid = () => {
         </div>
 
         {/* Other Services Section */}
-        <div className="mt-20">
-          <div className="mb-8">
+        <div className="mt-8">
+          <div className="mb-6">
             <h2 className="text-3xl font-bold text-gray-900 mb-1">
               Other Services
             </h2>

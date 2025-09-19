@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, MapPin, Users, Tag, CreditCard, Shield, Check } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Tag, Shield, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { useEvents } from '../context/EventContext';
 import Header from '../components/Header';
@@ -15,12 +15,7 @@ const BookingPage = () => {
   const [tickets, setTickets] = useState(Number(searchParams.get('tickets')) || 1);
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState(0);
-  const [contactInfo, setContactInfo] = useState({
-    name: '',
-    email: '',
-    phone: ''
-  });
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  // Removed contact info and payment method to streamline checkout UI
   const [isProcessing, setIsProcessing] = useState(false);
 
   const event = events.find(e => e.id === id);
@@ -61,17 +56,23 @@ const BookingPage = () => {
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
     
+    // Generate simple booking identifiers
+    const bookingId = `BK-${Date.now()}`;
+    const bookingCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+
     setBookingDetails({
+      bookingId,
+      bookingCode,
       eventId: event.id,
       tickets,
       totalAmount,
       discountApplied: eventDiscount + promoDiscountAmount,
-      promoCode: promoCode || undefined
+      promoCode: promoCode || undefined,
+      // Contact info removed from this simplified flow
     });
 
     setIsProcessing(false);
-    alert('Booking confirmed! Check your email for details.');
-    navigate('/');
+    navigate('/booking/confirmation');
   };
 
   return (
@@ -91,53 +92,22 @@ const BookingPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Booking Form */}
           <div className="space-y-6">
+            {/* Secure Checkout badge */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl p-6 shadow-sm"
+              className="bg-white rounded-xl p-6 shadow-sm flex items-center justify-between"
             >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Contact Information</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={contactInfo.name}
-                    onChange={(e) => setContactInfo({ ...contactInfo, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="Enter your full name"
-                  />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-green-600" />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    value={contactInfo.email}
-                    onChange={(e) => setContactInfo({ ...contactInfo, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="Enter your email"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    value={contactInfo.phone}
-                    onChange={(e) => setContactInfo({ ...contactInfo, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                    placeholder="+91 98765 43210"
-                  />
+                  <h2 className="text-lg font-semibold text-gray-900">Secure Checkout</h2>
+                  <p className="text-xs text-gray-500">256-bit encryption • PCI compliant</p>
                 </div>
               </div>
+              <span className="hidden sm:inline-block text-xs text-gray-500">Need help? Contact support</span>
             </motion.div>
 
             <motion.div
@@ -153,7 +123,7 @@ const BookingPage = () => {
                   type="text"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-secondary focus:border-transparent"
                   placeholder="Enter promo code"
                 />
                 <button
@@ -183,56 +153,7 @@ const BookingPage = () => {
               </div>
             </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-xl p-6 shadow-sm"
-            >
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Payment Method</h2>
-              
-              <div className="space-y-3">
-                <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    value="card"
-                    checked={paymentMethod === 'card'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="text-red-500"
-                  />
-                  <CreditCard className="w-5 h-5 text-gray-600" />
-                  <span className="flex-1">Credit/Debit Card</span>
-                </label>
-                
-                <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    value="upi"
-                    checked={paymentMethod === 'upi'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="text-red-500"
-                  />
-                  <div className="w-5 h-5 bg-blue-600 rounded text-white text-xs flex items-center justify-center">
-                    ₹
-                  </div>
-                  <span className="flex-1">UPI</span>
-                </label>
-                
-                <label className="flex items-center space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    value="wallet"
-                    checked={paymentMethod === 'wallet'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="text-red-500"
-                  />
-                  <div className="w-5 h-5 bg-purple-600 rounded text-white text-xs flex items-center justify-center">
-                    W
-                  </div>
-                  <span className="flex-1">Wallet</span>
-                </label>
-              </div>
-            </motion.div>
+            {/* Payment methods removed in simplified UI. We can integrate at the gateway step. */}
           </div>
 
           {/* Order Summary */}
@@ -266,20 +187,7 @@ const BookingPage = () => {
               </div>
 
               {/* Ticket Selection */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of tickets
-                </label>
-                <select
-                  value={tickets}
-                  onChange={(e) => setTickets(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                >
-                  {Array.from({ length: Math.min(10, event.capacity - event.booked) }, (_, i) => i + 1).map((num) => (
-                    <option key={num} value={num}>{num} ticket{num !== 1 ? 's' : ''}</option>
-                  ))}
-                </select>
-              </div>
+              {/* Ticket selector hidden per request */}
 
               {/* Price Breakdown */}
               <div className="space-y-3 border-t pt-4">
@@ -319,8 +227,8 @@ const BookingPage = () => {
               {/* Book Button */}
               <button
                 onClick={handleBooking}
-                disabled={isProcessing || !contactInfo.name || !contactInfo.email || !contactInfo.phone}
-                className="w-full mt-6 bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                disabled={isProcessing}
+                className="w-full mt-6 bg-brand-secondary text-white py-3 rounded-lg font-semibold hover:bg-brand-secondary/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <div className="flex items-center justify-center space-x-2">
