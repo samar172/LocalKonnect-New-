@@ -1,11 +1,28 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 
 const EventCard = ({ event, index }) => {
-  const eventDate = new Date(`${event.date}T${event.time}`);
-  const formattedDateTime = format(eventDate, 'EEE, d MMM, p');
+  // Robust date/time formatting with fallbacks
+  let dateObj = null;
+  if (event?.date) {
+    // Try ISO first
+    const iso = parseISO(event.date);
+    if (isValid(iso)) {
+      dateObj = iso;
+    } else if (event?.time) {
+      const combined = new Date(`${event.date}T${event.time}`);
+      if (isValid(combined)) dateObj = combined;
+    } else {
+      const asDate = new Date(event.date);
+      if (isValid(asDate)) dateObj = asDate;
+    }
+  }
+
+  const formattedDateTime = dateObj
+    ? format(dateObj, event?.time ? 'EEE, d MMM, p' : 'EEE, d MMM')
+    : (event?.time ? event.time : 'Date TBA');
 
   return (
     <motion.div

@@ -5,16 +5,36 @@ import { ArrowLeft, Calendar, MapPin, Users, Star, Share2, Heart, Clock, Tag, Ch
 import { format } from 'date-fns';
 import { useEvents } from '../context/EventContext';
 import Header from '../components/Header';
+import { SkeletonDetailHeader, SkeletonDetailInfo, SkeletonOrderSummary } from '../components/Skeleton';
 
 const EventDetails = () => {
   const { id } = useParams();
-  const { events } = useEvents();
+  const { events, isLoading } = useEvents();
   const [selectedTickets, setSelectedTickets] = useState(1);
   const [showMore, setShowMore] = useState(false);
   const [faqOpen, setFaqOpen] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
 
   const event = events.find(e => e.id === id);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 pt-8 md:pt-16 pb-24 md:pb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <SkeletonDetailHeader />
+              <SkeletonDetailInfo />
+            </div>
+            <div className="lg:col-span-1 hidden md:block">
+              <SkeletonOrderSummary />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!event) {
     return (

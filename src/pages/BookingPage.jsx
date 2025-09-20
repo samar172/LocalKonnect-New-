@@ -5,12 +5,13 @@ import { ArrowLeft, Calendar, MapPin, Users, Tag, Shield, Check } from 'lucide-r
 import { format } from 'date-fns';
 import { useEvents } from '../context/EventContext';
 import Header from '../components/Header';
+import { Skeleton, SkeletonOrderSummary } from '../components/Skeleton';
 
 const BookingPage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { events, setBookingDetails } = useEvents();
+  const { events, setBookingDetails, isLoading } = useEvents();
   
   const [tickets, setTickets] = useState(Number(searchParams.get('tickets')) || 1);
   const [promoCode, setPromoCode] = useState('');
@@ -31,6 +32,46 @@ const BookingPage = () => {
       navigate('/');
     }
   }, [event, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left column skeletons */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl p-6 shadow-sm flex items-center justify-between">
+                <div className="flex items-center gap-3 w-full">
+                  <div className="w-9 h-9 rounded-lg bg-green-50 border border-green-200" />
+                  <div className="flex-1">
+                    <Skeleton className="h-5 w-40 mb-1" />
+                    <Skeleton className="h-3 w-56" />
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <Skeleton className="h-7 w-48 mb-6" />
+                <div className="flex space-x-3">
+                  <Skeleton className="h-10 flex-1" />
+                  <Skeleton className="h-10 w-24 rounded-lg" />
+                </div>
+                <div className="mt-4 space-y-2">
+                  <Skeleton className="h-3 w-56" />
+                  <Skeleton className="h-3 w-64" />
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              </div>
+            </div>
+            {/* Right order summary skeleton */}
+            <div className="lg:col-span-1">
+              <SkeletonOrderSummary />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!event) return null;
 

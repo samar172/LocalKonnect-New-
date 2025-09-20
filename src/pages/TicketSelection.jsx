@@ -5,6 +5,7 @@ import { ArrowLeft, Calendar, Clock, Minus, Plus } from 'lucide-react';
 import { useEvents } from '../context/EventContext';
 import Header from '../components/Header';
 import { format } from 'date-fns';
+import { Skeleton, SkeletonTicketTiers } from '../components/Skeleton';
 
 // CalendarView removed; using simple date chips instead
 
@@ -37,7 +38,7 @@ const TicketTierCard = ({ tier, quantity, onAdd, onIncrement, onDecrement }) => 
 const TicketSelectionPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { events } = useEvents();
+  const { events, isLoading } = useEvents();
 
   // Fallback static data to avoid blank screens if context lacks detailed fields
   const fallbackEvent = {

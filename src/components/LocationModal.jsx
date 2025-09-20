@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, Crosshair } from 'lucide-react';
 import { popularCities, allCities } from '../assets/data/cities';
+import { Skeleton } from './Skeleton';
 
 const LocationModal = ({ isOpen, onClose, setSelectedLocation }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -135,16 +136,23 @@ const LocationModal = ({ isOpen, onClose, setSelectedLocation }) => {
               <div className="mb-8">
                 <h3 className="text-lg font-semibold text-gray-700 mb-4">Popular Cities</h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                  {popularCities.map(({ name, icon: Icon }) => (
-                    <button
-                      key={name}
-                      onClick={() => handleCitySelect(name)}
-                      className="flex flex-col items-center justify-center space-y-2 p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors border border-purple-100"
-                    >
-                      <Icon className="w-8 h-8 text-purple-600" />
-                      <span className="text-sm font-medium text-gray-800 text-center">{name}</span>
-                    </button>
-                  ))}
+                  {detecting
+                    ? Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="flex flex-col items-center justify-center space-y-2 p-3 rounded-lg border">
+                          <Skeleton className="w-8 h-8 rounded" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      ))
+                    : popularCities.map(({ name, icon: Icon }) => (
+                        <button
+                          key={name}
+                          onClick={() => handleCitySelect(name)}
+                          className="flex flex-col items-center justify-center space-y-2 p-3 bg-blue-100 rounded-lg hover:bg-blue-100 transition-colors border border-blue-100"
+                        >
+                          <Icon className="w-8 h-8 text-blue-600" />
+                          <span className="text-sm font-medium text-gray-800 text-center">{name}</span>
+                        </button>
+                      ))}
                 </div>
               </div>
 

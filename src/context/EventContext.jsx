@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import Garba1 from '../assets/images/Garba1.png';
 import Garba2 from '../assets/images/Garba2.png';
 import Garba3 from '../assets/images/Garba3.png';
@@ -24,7 +24,15 @@ export const EventProvider = ({ children }) => {
   const [selectedLocation, setSelectedLocation] = useState('Mumbai');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [bookingDetails, setBookingDetails] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Simulate initial data loading for UX skeletons
+  useEffect(() => {
+    const t = setTimeout(() => setIsLoading(false), 800);
+    return () => clearTimeout(t);
+  }, []);
 
   const events = [
     // Sports Events
@@ -189,8 +197,11 @@ export const EventProvider = ({ children }) => {
         setSearchQuery,
         selectedCategory,
         setSelectedCategory,
+        selectedCategoryId,
+        setSelectedCategoryId,
         bookingDetails,
-        setBookingDetails
+        setBookingDetails,
+        isLoading
       }}
     >
       {children}

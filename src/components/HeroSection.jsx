@@ -3,11 +3,138 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEvents } from '../context/EventContext';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
+import { SkeletonHero } from './Skeleton';
+import { getAllServices } from '../api/apiutils';
 
 const HeroSection = () => {
-  const { events } = useEvents();
-  const featuredEvents = events.slice(0, 5); // Use first 5 events for the slider
+  const { events, isLoading } = useEvents();
+  const [apiEvents, setApiEvents] = useState([]);
+  const [processingData, setProcessingData] = useState(true);
+  
+  // Fetch services from API and enrich
+  useEffect(() => {
+    let cancelled = false;
+    const fetchServices = async () => {
+      try {
+        const result = await getAllServices(19);
+        if (!cancelled && result?.success && Array.isArray(result?.data)) {
+          const srv = result.data;
+          // Enrich similar to EventsListPage
+          const toRad = (value) => (value * Math.PI) / 180;
+          const calcDistance = (lat1, lon1, lat2, lon2) => {
+            const R = 6371; // KM
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) ** 2 +
+                      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+                      Math.sin(dLon / 2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return +(R * c).toFixed(2);
+          };
+          const parseIfJSON = (val) => {
+            if (typeof val === 'object') return val;
+            try { return JSON.parse(val); } catch { return {}; }
+          };
+          let currLocation = null;
+          try {
+            const locStr = localStorage.getItem('location');
+            currLocation = locStr ? JSON.parse(locStr) : null;
+          } catch {}
+          if (!currLocation?.lat || !currLocation?.long) {
+            currLocation = { lat: '28.031097', long: '73.319387' };
+          }
+
+          const enriched = [];
+          srv.forEach((event) => {
+            if (event?.provider?.isActive) {
+              let eventDate = '';
+              let eventTime = '';
+              let eventLocation = {};
+              let eventDistance = null;
+
+              event?.attributes?.forEach((attribute) => {
+                if (attribute?.categoryAttribute?.entity === 'service') {
+                  switch (attribute?.categoryAttribute?.attributeKey) {
+                    case 'event_date':
+                      eventDate = attribute.value; break;
+                    case 'event_time':
+                      eventTime = attribute.value; break;
+                    case 'event_location':
+                      try {
+                        eventLocation = parseIfJSON(attribute.value);
+                        if (
+                          eventLocation?.latitude && eventLocation?.longitude &&
+                          currLocation?.lat && currLocation?.long
+                        ) {
+                          eventDistance = calcDistance(
+                            Number(currLocation.lat),
+                            Number(currLocation.long),
+                            Number(eventLocation.latitude),
+                            Number(eventLocation.longitude)
+                          );
+                        }
+                      } catch {}
+                      break;
+                    default:
+                      break;
+                  }
+                }
+              });
+
+              let min = { displayPriceMin: Infinity, overridePriceMin: Infinity };
+              let max = { displayPriceMax: -Infinity, overridePriceMax: -Infinity };
+              (event.variants || []).forEach((variant) => {
+                const price = Number(variant?.price);
+                const salePrice = Number(variant?.salePrice);
+                if (salePrice) {
+                  min.displayPriceMin = Math.min(min.displayPriceMin, salePrice);
+                  max.displayPriceMax = Math.max(max.displayPriceMax, salePrice);
+                  min.overridePriceMin = Math.min(min.overridePriceMin, price);
+                  max.overridePriceMax = Math.max(max.overridePriceMax, price);
+                } else if (!Number.isNaN(price)) {
+                  min.displayPriceMin = Math.min(min.displayPriceMin, price);
+                  max.displayPriceMax = Math.max(max.displayPriceMax, price);
+                }
+              });
+
+              const mapped = {
+                id: event.id,
+                // title and image fallbacks
+                title: event?.name || event?.title || 'Featured Event',
+                image: event?.thumbnail || event?.image || (event?.provider?.images?.[0]) || '',
+                // Map to HeroSection expected fields
+                category: event?.category?.name,
+                date: eventDate || event?.date,
+                time: eventTime || event?.time,
+                venue: event?.provider?.address || event?.venue || 'Venue',
+                location: event?.provider?.city || event?.location || 'City',
+                price: (min.displayPriceMin === Infinity ? (event?.price || 0) : min.displayPriceMin),
+                originalPrice: (min.overridePriceMin === Infinity ? undefined : min.overridePriceMin),
+                discount: undefined,
+                eventDistance,
+              };
+              enriched.push(mapped);
+            }
+          });
+
+          if (!cancelled) setApiEvents(enriched);
+        }
+      } catch (e) {
+        // fail silently, fallback to context events
+      } finally {
+        if (!cancelled) {
+          const t = setTimeout(() => setProcessingData(false), 400);
+          return () => clearTimeout(t);
+        }
+      }
+    };
+    fetchServices();
+    return () => { cancelled = true; };
+  }, []);
+
+  const featuredFromApi = apiEvents.slice(0, 5);
+  const featuredEvents = (featuredFromApi.length > 0 ? featuredFromApi : events.slice(0, 5));
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0); // -1 for left, 1 for right
 
@@ -31,11 +158,31 @@ const HeroSection = () => {
     return () => clearInterval(slideInterval);
   }, [nextSlide]);
 
+  if (isLoading || processingData) {
+    return <SkeletonHero />;
+  }
+
   const currentEvent = featuredEvents[currentIndex];
   if (!currentEvent) return null;
 
-  const eventDate = new Date(currentEvent.date);
-  const formattedDate = `${format(eventDate, 'EEE, d MMM')} - ${currentEvent.time}`;
+  // Robust date/time formatting with fallbacks
+  let dateObj = null;
+  if (currentEvent?.date) {
+    // Try parse ISO first; fallback to Date constructor
+    const tryIso = parseISO(currentEvent.date);
+    dateObj = isValid(tryIso) ? tryIso : new Date(currentEvent.date);
+    if (!isValid(dateObj)) {
+      dateObj = null;
+    }
+  }
+
+  const formattedDate = dateObj
+    ? `${format(dateObj, 'EEE, d MMM')}${currentEvent?.time ? ` - ${currentEvent.time}` : ''}`
+    : (currentEvent?.time ? `${currentEvent.time}` : 'Date TBA');
+
+  // Use static images from context only (ignore API images)
+  const fallbackImages = events.slice(0, 5).map(e => e.image);
+  const displayImage = fallbackImages[currentIndex] || events[0]?.image || '';
 
   const slideVariants = {
     hidden: (dir) => ({
@@ -72,7 +219,7 @@ const HeroSection = () => {
           transition={{ duration: 1.5, ease: 'easeOut' }}
           className="absolute inset-0 bg-cover bg-center blur-0 md:blur-sm transform-none md:scale-105"
           style={{
-            backgroundImage: `url(${currentEvent.image})`
+            backgroundImage: `url(${displayImage})`
           }}
         />
       </AnimatePresence>
@@ -147,7 +294,7 @@ const HeroSection = () => {
               >
                 <div className="w-[280px] h-[420px] rounded-xl overflow-hidden shadow-2xl">
                   <img
-                    src={currentEvent.image}
+                    src={displayImage}
                     alt={currentEvent.title}
                     className="w-full h-full object-cover"
                   />
