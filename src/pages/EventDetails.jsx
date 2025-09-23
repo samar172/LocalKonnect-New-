@@ -128,6 +128,25 @@ const EventDetails = () => {
                   />
                 </button>
               </div>
+
+              {/* Gallery Section */}
+              <div className="border-t pt-6 mt-6">
+                <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-4">Gallery</h3>
+                {event.files && event.files.length > 0 && (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {event.files[0].split(',').map((imageUrl, index) => (
+                      <div key={index} className="aspect-square overflow-hidden rounded-lg">
+                        <img 
+                          src={imageUrl.trim()} 
+                          alt={`Event ${index + 1}`}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </motion.div>
           </div>
 
