@@ -2,10 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, Clock, Minus, Plus } from 'lucide-react';
-import { useEvents } from '../context/EventContext';
-import Header from '../components/Header';
+import { useEvents } from '../../../context/EventContext';
+import Header from '../../../components/Header';
 import { format } from 'date-fns';
-import { Skeleton, SkeletonTicketTiers } from '../components/Skeleton';
+import { Skeleton, SkeletonTicketTiers } from '../../../components/Skeleton';
 
 // CalendarView removed; using simple date chips instead
 

@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
 import QRCode from 'react-qr-code';
-import { useEvents } from '../context/EventContext';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import { useEvents } from '@/context/EventContext';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 const BookingConfirmationPage = () => {
   const navigate = useNavigate();

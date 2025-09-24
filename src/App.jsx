@@ -1,17 +1,17 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
-import EventDetails from './pages/EventDetails';
-import BookingPage from './pages/BookingPage';
+import EventDetails from '@/pages/events/pages/EventDetails';
+import BookingPage from '@/pages/events/pages/BookingPage';
 import Team from './pages/Team';
 import Contact from './pages/Contact';
 import DeleteAccount from './pages/DeleteAccount';
 import { EventProvider } from './context/EventContext';
-import TicketSelection from './pages/TicketSelection';
+import TicketSelection from './pages/events/pages/TicketSelection';
 import { AuthProvider } from './context/AuthContext';
 import AuthModal from './components/AuthModal';
 import ScrollToTop from './components/ScrollToTop';
-import BookingConfirmationPage from './pages/BookingConfirmationPage';
+import BookingConfirmationPage from '@/pages/events/pages/BookingConfirmationPage';
 import Terms from './pages/Terms';
 import Privacy from './pages/Privacy';
 

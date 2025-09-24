@@ -3,16 +3,16 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, MapPin, Users, Tag, Shield, Check } from 'lucide-react';
 import { format } from 'date-fns';
-import { useEvents } from '../context/EventContext';
-import Header from '../components/Header';
-import { Skeleton, SkeletonOrderSummary } from '../components/Skeleton';
+import { useEvents } from '@/context/EventContext';
+import Header from '@/components/Header';
+import { Skeleton, SkeletonOrderSummary } from '@/components/Skeleton';
 
 const BookingPage = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { events, setBookingDetails, isLoading } = useEvents();
-  
+
   const [tickets, setTickets] = useState(Number(searchParams.get('tickets')) || 1);
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState(0);
@@ -93,10 +93,10 @@ const BookingPage = () => {
 
   const handleBooking = async () => {
     setIsProcessing(true);
-    
+
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     // Generate simple booking identifiers
     const bookingId = `BK-${Date.now()}`;
     const bookingCode = Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -119,7 +119,7 @@ const BookingPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
+
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <button
@@ -158,7 +158,7 @@ const BookingPage = () => {
               className="bg-white rounded-xl p-6 shadow-sm"
             >
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Promo Code</h2>
-              
+
               <div className="flex space-x-3">
                 <input
                   type="text"
@@ -174,7 +174,7 @@ const BookingPage = () => {
                   Apply
                 </button>
               </div>
-              
+
               {promoDiscount > 0 && (
                 <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center">
                   <Check className="w-5 h-5 text-green-600 mr-2" />
@@ -206,11 +206,11 @@ const BookingPage = () => {
               className="bg-white rounded-xl p-6 shadow-sm sticky top-24"
             >
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Summary</h2>
-              
+
               {/* Event Info */}
               <div className="border-b pb-4 mb-4">
                 <h3 className="font-semibold text-gray-900 mb-2">{event.title}</h3>
-                
+
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4" />
@@ -236,7 +236,7 @@ const BookingPage = () => {
                   <span className="text-gray-700">Tickets ({tickets})</span>
                   <span>₹{basePrice.toLocaleString()}</span>
                 </div>
-                
+
                 {event.discount && (
                   <div className="flex justify-between text-green-600">
                     <span className="flex items-center">
@@ -246,19 +246,19 @@ const BookingPage = () => {
                     <span>-₹{eventDiscount.toLocaleString()}</span>
                   </div>
                 )}
-                
+
                 {promoDiscount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span>Promo Discount ({promoDiscount}%)</span>
                     <span>-₹{promoDiscountAmount.toLocaleString()}</span>
                   </div>
                 )}
-                
+
                 <div className="flex justify-between text-sm text-gray-600">
                   <span>Platform Fee</span>
                   <span>₹0</span>
                 </div>
-                
+
                 <div className="border-t pt-3 flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span>₹{totalAmount.toLocaleString()}</span>
