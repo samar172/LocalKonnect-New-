@@ -244,7 +244,7 @@ const EventDetails = () => {
                       </div>
                     </div>
                     <Link
-                      to={`/tickets/${event.id}?variant=${minVariant.id}`}
+                      to={`/tickets/${event.id}`}
                       className="w-full bg-brand-secondary hover:bg-brand-secondary/90 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center"
                     >
                       <span>Book Now</span>

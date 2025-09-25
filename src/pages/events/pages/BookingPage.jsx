@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, MapPin, Users, Tag, Shield, Check } from 'lucide-react';
 import { format } from 'date-fns';
@@ -9,17 +9,30 @@ import { Skeleton, SkeletonOrderSummary } from '@/components/Skeleton';
 
 const BookingPage = () => {
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { events, setBookingDetails, isLoading } = useEvents();
-
-  const [tickets, setTickets] = useState(Number(searchParams.get('tickets')) || 1);
+  const { setBookingDetails } = useEvents();
+  const location = useLocation();
+  
+  // Get data from navigation state
+  const { 
+    event,
+    selectedTickets = [],
+    totalAmount = 0,
+    totalItems = 0,
+    selectedDate,
+    selectedTime
+  } = location.state || {};
+  
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState(0);
-  // Removed contact info and payment method to streamline checkout UI
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const event = events.find(e => e.id === id);
+  
+  // Redirect back if no data is available
+  useEffect(() => {
+    if (!event || !selectedTickets || selectedTickets.length === 0) {
+      navigate(`/tickets/${id}`);
+    }
+  }, [event, selectedTickets, id, navigate]);
 
   const promoCodes = {
     'FIRST20': 20,
@@ -33,53 +46,12 @@ const BookingPage = () => {
     }
   }, [event, navigate]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left column skeletons */}
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl p-6 shadow-sm flex items-center justify-between">
-                <div className="flex items-center gap-3 w-full">
-                  <div className="w-9 h-9 rounded-lg bg-green-50 border border-green-200" />
-                  <div className="flex-1">
-                    <Skeleton className="h-5 w-40 mb-1" />
-                    <Skeleton className="h-3 w-56" />
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <Skeleton className="h-7 w-48 mb-6" />
-                <div className="flex space-x-3">
-                  <Skeleton className="h-10 flex-1" />
-                  <Skeleton className="h-10 w-24 rounded-lg" />
-                </div>
-                <div className="mt-4 space-y-2">
-                  <Skeleton className="h-3 w-56" />
-                  <Skeleton className="h-3 w-64" />
-                  <Skeleton className="h-3 w-48" />
-                </div>
-              </div>
-            </div>
-            {/* Right order summary skeleton */}
-            <div className="lg:col-span-1">
-              <SkeletonOrderSummary />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (!event) return null;
 
-  const eventDate = new Date(event.date);
-  const basePrice = event.price * tickets;
-  const eventDiscount = event.discount ? (((event.originalPrice || event.price) - event.price) * tickets) : 0;
-  const promoDiscountAmount = (basePrice * promoDiscount) / 100;
-  const totalAmount = basePrice - promoDiscountAmount;
+  // Calculate totals from selected tickets
+  const subtotal = selectedTickets.reduce((sum, ticket) => sum + ticket.totalPrice, 0);
+  const promoDiscountAmount = (subtotal * promoDiscount) / 100;
+  const finalTotal = subtotal - promoDiscountAmount;
 
   const handlePromoCode = () => {
     const discount = promoCodes[promoCode];
@@ -94,26 +66,49 @@ const BookingPage = () => {
   const handleBooking = async () => {
     setIsProcessing(true);
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Simulate payment processing
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    // Generate simple booking identifiers
-    const bookingId = `BK-${Date.now()}`;
-    const bookingCode = Math.random().toString(36).slice(2, 8).toUpperCase();
+      // Generate simple booking identifiers
+      const bookingId = `BK-${Date.now()}`;
+      const bookingCode = Math.random().toString(36).slice(2, 8).toUpperCase();
 
-    setBookingDetails({
-      bookingId,
-      bookingCode,
-      eventId: event.id,
-      tickets,
-      totalAmount,
-      discountApplied: eventDiscount + promoDiscountAmount,
-      promoCode: promoCode || undefined,
-      // Contact info removed from this simplified flow
-    });
+      setBookingDetails({
+        bookingId,
+        bookingCode,
+        event: {
+          ...event,
+          date: selectedDate,
+          time: selectedTime
+        },
+        tickets: selectedTickets,
+        subtotal: subtotal.toFixed(2),
+        discount: promoDiscountAmount.toFixed(2),
+        total: finalTotal.toFixed(2),
+        promoCode: promoCode || undefined,
+      });
 
-    setIsProcessing(false);
-    navigate('/booking/confirmation');
+      // Navigate to confirmation page with booking data
+      navigate(`/booking-confirmation/${id}`, {
+        state: {
+          bookingId,
+          bookingCode,
+          event: {
+            ...event,
+            date: selectedDate,
+            time: selectedTime
+          },
+          tickets: selectedTickets,
+          total: finalTotal.toFixed(2)
+        }
+      });
+    } catch (error) {
+      console.error('Error processing booking:', error);
+      alert('There was an error processing your booking. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -213,17 +208,29 @@ const BookingPage = () => {
 
                 <div className="space-y-2 text-sm text-gray-600">
                   <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>{format(eventDate, 'MMM dd, yyyy')} at {event.time}</span>
+                    <Calendar className="w-4 h-4 text-brand-secondary" />
+                    <span>{format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')} • {selectedTime}</span>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{event.venue}, {event.location}</span>
+                    <MapPin className="w-4 h-4 text-brand-secondary" />
+                    <span>{event.venue}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Users className="w-4 h-4" />
-                    <span>{tickets} ticket{tickets !== 1 ? 's' : ''}</span>
-                  </div>
+                </div>
+              </div>
+
+              {/* Selected Tickets */}
+              <div className="mb-4">
+                <h4 className="font-medium text-gray-900 mb-2">Your Tickets</h4>
+                <div className="space-y-3">
+                  {selectedTickets.map((ticket, index) => (
+                    <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium text-sm">{ticket.name} × {ticket.quantity}</p>
+                        <p className="text-xs text-gray-500">₹{ticket.pricePerTicket} each</p>
+                      </div>
+                      <span className="font-medium">₹{ticket.totalPrice.toLocaleString()}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -233,23 +240,16 @@ const BookingPage = () => {
               {/* Price Breakdown */}
               <div className="space-y-3 border-t pt-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-700">Tickets ({tickets})</span>
-                  <span>₹{basePrice.toLocaleString()}</span>
+                  <span className="text-gray-700">Subtotal</span>
+                  <span>₹{subtotal.toLocaleString()}</span>
                 </div>
-
-                {event.discount && (
-                  <div className="flex justify-between text-green-600">
-                    <span className="flex items-center">
-                      <Tag className="w-4 h-4 mr-1" />
-                      Event Discount ({event.discount}%)
-                    </span>
-                    <span>-₹{eventDiscount.toLocaleString()}</span>
-                  </div>
-                )}
 
                 {promoDiscount > 0 && (
                   <div className="flex justify-between text-green-600">
-                    <span>Promo Discount ({promoDiscount}%)</span>
+                    <span className="flex items-center">
+                      <Tag className="w-4 h-4 mr-1" />
+                      Promo Code ({promoCode}) -{promoDiscount}%
+                    </span>
                     <span>-₹{promoDiscountAmount.toLocaleString()}</span>
                   </div>
                 )}
@@ -261,7 +261,7 @@ const BookingPage = () => {
 
                 <div className="border-t pt-3 flex justify-between text-lg font-bold">
                   <span>Total</span>
-                  <span>₹{totalAmount.toLocaleString()}</span>
+                  <span>₹{finalTotal.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -277,7 +277,7 @@ const BookingPage = () => {
                     <span>Processing...</span>
                   </div>
                 ) : (
-                  `Pay ₹${totalAmount.toLocaleString()}`
+                  `Pay ₹${finalTotal.toLocaleString()}`
                 )}
               </button>
 
