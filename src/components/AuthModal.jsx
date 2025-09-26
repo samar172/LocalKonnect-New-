@@ -1,87 +1,191 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight, LogOut, MessageSquare, FileText, Shield, ArrowLeft } from 'lucide-react';
+import { X, ChevronRight, LogOut, MessageSquare, FileText, Shield, ArrowLeft, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
+import axios from 'axios';
 
 const OTP_LENGTH = 6;
 
 const AuthModal = () => {
   const { isAuthModalOpen, closeAuthModal, login, user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState('phone'); // 'phone' or 'otp'
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState(new Array(OTP_LENGTH).fill(''));
-  const [countdown, setCountdown] = useState(30);
-  
+  const [otp, setOtp] = useState(Array(6).fill(''));
+  const [countdown, setCountdown] = useState(120); // 2 minutes countdown
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [error, setError] = useState('');
   const otpInputRefs = useRef([]);
+  const [navigationState, setNavigationState] = useState(() => {
+    const savedState = sessionStorage.getItem('otpVerificationState');
+    if (savedState) {
+      try {
+        return JSON.parse(savedState);
+      } catch (e) {
+        console.error('Failed to parse saved state:', e);
+      }
+    }
+    return {};
+  });
 
+  // Check authentication status on mount and when the modal opens
   useEffect(() => {
-    if (step === 'otp' && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
+    // Handle session expired message
+    if (location.state?.error === 'session_expired') {
+      setError(location.state.message || 'Your session has expired. Please sign in again.');
+      window.history.replaceState({}, document.title);
     }
-  }, [step, countdown]);
 
-  const handlePhoneSubmit = (e) => {
-    e.preventDefault();
-    if (phoneNumber.length === 10) {
-      setStep('otp');
-      setCountdown(30); // Reset countdown
+    const checkAuth = () => {
+      const token = localStorage.getItem('lk_auth_token');
+      const userData = localStorage.getItem('lk-user');
+      
+      if (token && userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          if (parsedUser) {
+            // Update the auth context if we have a user in localStorage but not in context
+            if (!user) {
+              login(parsedUser);
+            }
+            closeAuthModal();
+          }
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+          // Clear invalid user data
+          localStorage.removeItem('lk_auth_token');
+          localStorage.removeItem('lk-user');
+        }
+      }
+    };
+
+    checkAuth();
+  }, [isAuthModalOpen, location.state, closeAuthModal, login, user]);
+
+  const handleOtpSubmit = async (e) => {
+    e?.preventDefault();
+    const otpString = otp.join('');
+    
+    if (otpString.length !== OTP_LENGTH) {
+      return;
     }
-  };
 
-  const handleOtpChange = (element, index) => {
-    if (isNaN(element.value)) return;
+    setIsLoading(true);
+    setError('');
 
-    setOtp([...otp.map((d, idx) => (idx === index ? element.value : d))]);
+    try {
+      const endpoint = '/auth/m/verify-otp';
+      const requestData = {
+        mobile: phoneNumber,
+        otp: otpString
+      };
 
-    // Focus next input
-    if (element.nextSibling && element.value) {
-      element.nextSibling.focus();
-    }
-  };
+      console.log('Verifying OTP:', { endpoint, ...requestData });
+      
+      const response = await axios.create({
+        baseURL: import.meta.env.VITE_API_BASE_URL,
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000
+      }).post(endpoint, requestData);
 
-  const handleOtpKeyDown = (e, index) => {
-    // Focus previous input on backspace
-    if (e.key === 'Backspace' && !otp[index] && index > 0 && otpInputRefs.current[index - 1]) {
-      otpInputRefs.current[index - 1].focus();
-    }
-  };
-
-  const handleOtpSubmit = (e) => {
-    e.preventDefault();
-    const enteredOtp = otp.join('');
-    if (enteredOtp.length === OTP_LENGTH) {
-      // Simulate OTP verification
-      console.log('Verifying OTP:', enteredOtp);
-      login(phoneNumber);
-      // Reset state on close
-      setTimeout(() => {
-        setStep('phone');
-        setPhoneNumber('');
-        setOtp(new Array(OTP_LENGTH).fill(''));
-      }, 300);
+      if (response.data.success) {
+        const { token, user } = response.data.data;
+        
+        // Clear OTP verification state
+        sessionStorage.removeItem('otpVerificationState');
+        
+        // Store auth data
+        localStorage.setItem('lk_auth_token', token);
+        localStorage.setItem('lk-user', JSON.stringify(user));
+        
+        // Call the login function from auth context
+        login(user);
+        
+        // Show success message
+        toast.success('Login successful!');
+        
+        // Close modal after a short delay
+        setTimeout(() => {
+          closeAuthModal();
+          setStep('phone');
+          setPhoneNumber('');
+          setOtp(Array(6).fill(''));
+        }, 1000);
+      } else {
+        throw new Error(response.data.message || 'OTP verification failed');
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      const errorMessage = error.response?.data?.message || 'Invalid OTP. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+      
+      // Clear OTP on error
+      setOtp(Array(6).fill(''));
+      if (otpInputRefs.current[0]) {
+        otpInputRefs.current[0].focus();
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const changePhoneNumber = () => {
     setStep('phone');
-    setOtp(new Array(OTP_LENGTH).fill(''));
+    setOtp(Array(6).fill(''));
+    setError('');
   };
 
-  const resendOtp = () => {
-    if (countdown === 0) {
-      setCountdown(30);
-      // Logic to resend OTP
-      console.log('Resending OTP...');
+  const resendOtp = async () => {
+    if (countdown > 0) return;
+    
+    setIsResending(true);
+    setError('');
+    
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/auth/m/resend-otp`,
+        { mobile: phoneNumber },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30000
+        }
+      );
+      
+      if (response.data.success) {
+        setCountdown(120); // Reset countdown to 2 minutes
+        setOtp(Array(6).fill(''));
+        otpInputRefs.current[0]?.focus();
+        toast.success('OTP resent successfully!');
+      }
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to resend OTP. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsResending(false);
     }
   };
 
   const isOtpComplete = otp.join('').length === OTP_LENGTH;
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  // Don't render anything if modal is closed and we don't have a user
+  if (!isAuthModalOpen && !user) {
+    return null;
+  }
 
   // Logged-in: show a right-side profile drawer
-  if (user && isAuthModalOpen) {
+  if (user) {
     const displayName = user?.name || 'Profile';
     const displayPhone = user?.phone ? `+91 ${user.phone}` : '';
 
@@ -195,6 +299,11 @@ const AuthModal = () => {
     );
   }
 
+  // If we reach here, we should show the auth modal
+  if (!isAuthModalOpen) {
+    return null;
+  }
+
   // Logged-out: show existing authentication modal
   return (
     <AnimatePresence>
@@ -257,9 +366,21 @@ const AuthModal = () => {
                           pattern="\d{10}"
                         />
                       </div>
-                      <button type="submit" className="w-full mt-4 bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
-                        Continue
+                      <button 
+                        type="submit" 
+                        className="w-full mt-4 bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sending OTP...
+                          </>
+                        ) : (
+                          'Continue'
+                        )}
                       </button>
+                      {error && <p className="mt-2 text-sm text-red-600 text-center">{error}</p>}
                     </form>
                     <p className="text-xs text-gray-400 text-center mt-4">
                       By continuing, you agree to our <a href="/terms" className="underline">Terms of Service</a> and <a href="/privacy" className="underline">Privacy Policy</a>.
@@ -288,28 +409,50 @@ const AuthModal = () => {
                           <input
                             key={index}
                             type="text"
+                            inputMode="numeric"
                             maxLength="1"
                             value={data}
                             onChange={(e) => handleOtpChange(e.target, index)}
                             onKeyDown={(e) => handleOtpKeyDown(e, index)}
                             ref={(el) => (otpInputRefs.current[index] = el)}
-                            className="w-12 h-14 text-center text-2xl font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-secondary focus:border-transparent"
+                            className="w-12 h-14 text-center text-2xl font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-secondary focus:border-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                             required
+                            disabled={isLoading}
+                            autoFocus={index === 0}
                           />
                         ))}
                       </div>
+                      {error && <p className="mt-2 text-sm text-red-600 text-center">{error}</p>}
                       <button
                         type="submit"
-                        disabled={!isOtpComplete}
-                        className="w-full mt-6 bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                        disabled={!isOtpComplete || isLoading}
+                        className="w-full mt-6 bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center"
                       >
-                        Continue
+                        {isLoading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Verifying...
+                          </>
+                        ) : (
+                          'Verify OTP'
+                        )}
                       </button>
                     </form>
                     <p className="text-sm text-gray-500 text-center mt-4">
                       Didn't get the OTP?{' '}
-                      <button onClick={resendOtp} disabled={countdown > 0} className="text-brand-secondary font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed">
-                        Request again {countdown > 0 && `in 00:${countdown.toString().padStart(2, '0')}`}
+                      <button 
+                        onClick={resendOtp} 
+                        disabled={countdown > 0 || isResending} 
+                        className="text-brand-secondary font-medium hover:underline disabled:text-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+                      >
+                        {isResending ? (
+                          <span className="inline-flex items-center">
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            Sending...
+                          </span>
+                        ) : (
+                          `Request again ${countdown > 0 ? `in ${formatTime(countdown)}` : ''}`
+                        )}
                       </button>
                     </p>
                   </motion.div>

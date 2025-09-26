@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, MapPin, Users, Tag, Shield, Check } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Tag, Shield, Check, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useEvents } from '@/context/EventContext';
+import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/Header';
+import { createBooking } from "@/api/apiUtils";
+import { useRazorpay } from '@/services/paymentService';
 import { Skeleton, SkeletonOrderSummary } from '@/components/Skeleton';
+import { toast } from 'react-hot-toast';
 
 const BookingPage = () => {
-  const { id } = useParams();
+  const { id: eventId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { setBookingDetails } = useEvents();
   const location = useLocation();
+  const { initiatePayment, isPaymentLoading } = useRazorpay();
   
   // Get data from navigation state
   const { 
@@ -23,6 +29,9 @@ const BookingPage = () => {
     selectedTime
   } = location.state || {};
   
+  const [bookingStatus, setBookingStatus] = useState('idle'); // 'idle' | 'processing' | 'success' | 'error'
+  const [bookingId, setBookingId] = useState(null);
+  
   const [promoCode, setPromoCode] = useState('');
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -30,9 +39,9 @@ const BookingPage = () => {
   // Redirect back if no data is available
   useEffect(() => {
     if (!event || !selectedTickets || selectedTickets.length === 0) {
-      navigate(`/tickets/${id}`);
+      navigate(`/tickets/${eventId}`);
     }
-  }, [event, selectedTickets, id, navigate]);
+  }, [event, selectedTickets, eventId, navigate]);
 
   const promoCodes = {
     'FIRST20': 20,
@@ -57,56 +66,148 @@ const BookingPage = () => {
     const discount = promoCodes[promoCode];
     if (discount) {
       setPromoDiscount(discount);
+      toast.success(`Promo code applied! ${discount}% discount`);
     } else {
       setPromoDiscount(0);
-      alert('Invalid promo code');
+      toast.error('Invalid promo code');
     }
+  };
+  
+  const updateBookingStatus = async (bookingId, status) => {
+    try {
+      // TODO: Implement actual API call to update booking status
+      console.log(`Updating booking ${bookingId} status to:`, status);
+      return true;
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      toast.error('Failed to update booking status');
+      return false;
+    }
+  };
+  
+  const handlePaymentFailure = async (error) => {
+    console.error('Payment failed:', error);
+    setBookingStatus('error');
+    
+    // Update booking status to failed
+    if (bookingId) {
+      await updateBookingStatus(bookingId, 'payment_failed');
+    }
+    
+    toast.error('Payment failed. Please try again.');
   };
 
   const handleBooking = async () => {
-    setIsProcessing(true);
+    if (!user) {
+      toast.error('Please login to book tickets');
+      navigate('/login', { state: { from: location.pathname, state: location.state } });
+      return;
+    }
 
+    setBookingStatus('processing');
+    
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Generate simple booking identifiers
-      const bookingId = `BK-${Date.now()}`;
-      const bookingCode = Math.random().toString(36).slice(2, 8).toUpperCase();
-
-      setBookingDetails({
-        bookingId,
-        bookingCode,
-        event: {
-          ...event,
-          date: selectedDate,
-          time: selectedTime
-        },
-        tickets: selectedTickets,
-        subtotal: subtotal.toFixed(2),
-        discount: promoDiscountAmount.toFixed(2),
-        total: finalTotal.toFixed(2),
+      // 1. Create a booking record in your backend
+      const bookingData = {
+        eventId: event._id,
+        userId: user._id,
+        tickets: selectedTickets.map(ticket => ({
+          ticketTypeId: ticket.id,
+          quantity: ticket.quantity,
+          price: ticket.price,
+          totalPrice: ticket.totalPrice,
+        })),
+        eventDate: selectedDate,
+        eventTime: selectedTime,
         promoCode: promoCode || undefined,
-      });
+        subtotal,
+        discount: promoDiscountAmount,
+        total: finalTotal,
+      };
 
-      // Navigate to confirmation page with booking data
-      navigate(`/booking-confirmation/${id}`, {
-        state: {
-          bookingId,
-          bookingCode,
-          event: {
-            ...event,
-            date: selectedDate,
-            time: selectedTime
-          },
-          tickets: selectedTickets,
-          total: finalTotal.toFixed(2)
+      const bookingResponse = await createBooking(bookingData);
+      const { bookingId, orderId } = bookingResponse.data;
+      
+      setBookingId(bookingId);
+
+      // 2. Initialize Razorpay payment
+      const options = {
+        amount: Math.round(finalTotal * 100), // Convert to paise
+        currency: 'INR',
+        order_id: orderId,
+        name: event.title,
+        description: `Booking for ${event.title} on ${selectedDate}`,
+        prefill: {
+          name: user.name,
+          email: user.email,
+          contact: user.phone,
+        },
+        handler: async function (response) {
+          try {
+            // Verify payment with your backend
+            const verification = await verifyPayment(response);
+            
+            if (verification.success) {
+              // Update booking status to confirmed
+              await updateBookingStatus(bookingId, 'confirmed');
+              
+              // Set booking details in context
+              setBookingDetails({
+                bookingId,
+                bookingCode: bookingResponse.data.bookingCode,
+                event: {
+                  ...event,
+                  date: selectedDate,
+                  time: selectedTime
+                },
+                tickets: selectedTickets,
+                subtotal: subtotal.toFixed(2),
+                discount: promoDiscountAmount.toFixed(2),
+                total: finalTotal.toFixed(2),
+                promoCode: promoCode || undefined,
+              });
+
+              // Navigate to success page
+              navigate(`/booking-confirmation/${bookingId}`, {
+                state: {
+                  bookingId,
+                  bookingCode: bookingResponse.data.bookingCode,
+                  event: {
+                    ...event,
+                    date: selectedDate,
+                    time: selectedTime
+                  },
+                  tickets: selectedTickets,
+                  total: finalTotal.toFixed(2)
+                }
+              });
+            } else {
+              throw new Error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            await updateBookingStatus(bookingId, 'payment_failed');
+            toast.error('Payment verification failed. Please contact support.');
+          }
+        },
+        modal: {
+          ondismiss: async () => {
+            // Handle modal dismissal (user closed the payment modal)
+            await updateBookingStatus(bookingId, 'cancelled');
+            setBookingStatus('idle');
+          }
         }
-      });
+      };
+
+      // Initiate Razorpay payment
+      initiatePayment(bookingResponse.data.order, options);
+      
     } catch (error) {
-      console.error('Error processing booking:', error);
-      alert('There was an error processing your booking. Please try again.');
+      console.error('Booking error:', error);
+      setBookingStatus('error');
+      toast.error(error.response?.data?.message || 'Failed to process booking');
     } finally {
+      setBookingStatus('idle');
       setIsProcessing(false);
     }
   };
@@ -266,20 +367,19 @@ const BookingPage = () => {
               </div>
 
               {/* Book Button */}
-              <button
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-medium text-center hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 onClick={handleBooking}
-                disabled={isProcessing}
-                className="w-full mt-6 bg-brand-secondary text-white py-3 rounded-lg font-semibold hover:bg-brand-secondary/90 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+                disabled={isProcessing || isPaymentLoading}
               >
-                {isProcessing ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    <span>Processing...</span>
-                  </div>
-                ) : (
-                  `Pay ₹${finalTotal.toLocaleString()}`
-                )}
-              </button>
+                {(isProcessing || isPaymentLoading) ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Processing...
+                  </>
+                ) : 'Confirm & Pay'}
+              </motion.button>
 
               <div className="flex items-center justify-center space-x-2 mt-4 text-sm text-gray-500">
                 <Shield className="w-4 h-4" />

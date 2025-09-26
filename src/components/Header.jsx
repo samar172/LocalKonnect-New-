@@ -1,18 +1,50 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Search, MapPin, Menu, X, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, MapPin, Menu, X, User, LogOut } from 'lucide-react';
 import { useEvents } from '../context/EventContext';
 import LocationModal from './LocationModal';
 import { useAuth } from '../context/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Header = () => {
   const { selectedLocation, setSelectedLocation } = useEvents();
-  const { openAuthModal, user } = useAuth();
+  const { openAuthModal, user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeLink, setActiveLink] = useState('');
   const isHome = location.pathname === '/';
+  const profileRef = React.useRef(null);
+
+  // Close profile dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setIsProfileOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleProfileClick = () => {
+    if (user) {
+      setIsProfileOpen(!isProfileOpen);
+    } else {
+      openAuthModal();
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsProfileOpen(false);
+    navigate('/');
+  };
 
   const navItems = [
     { name: 'For you', path: '/for-you' },
@@ -116,28 +148,95 @@ const Header = () => {
                 />
               </div>
               {/* Profile greeting (desktop) */}
-              <div className={`hidden md:flex items-center gap-2 ${isHome ? 'text-white' : 'text-gray-800'}`}>
-                <button
-                  aria-label="Profile"
-                  onClick={openAuthModal}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-                    isHome
-                      ? 'bg-white/20 border border-white/40 hover:bg-white/30'
-                      : 'bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  <User className={`w-5 h-5 ${isHome ? '' : 'text-gray-700'}`} />
-                </button>
-                <span className="font-medium">{user?.phone ? `Hi, +91-${user.phone}` : 'Hi, Guest'}</span>
+              <div className={`hidden md:flex items-center gap-2 ${isHome ? 'text-white' : 'text-gray-800'}`} ref={profileRef}>
+                <div className="relative">
+                  <button
+                    aria-label="Profile"
+                    onClick={handleProfileClick}
+                    className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
+                      isHome
+                        ? 'bg-white/20 border border-white/40 hover:bg-white/30'
+                        : 'bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-700'
+                    }`}
+                  >
+                    <User className={`w-5 h-5 ${isHome ? '' : 'text-gray-700'}`} />
+                  </button>
+                  
+                  {/* Profile Dropdown */}
+                  <AnimatePresence>
+                    {isProfileOpen && user && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
+                      >
+                        <div className="px-4 py-2 border-b border-gray-100">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {user.name || `+91-${user.phone}`}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {user.email || 'Welcome back!'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          Sign out
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                <span className="font-medium">
+                  {user ? 
+                    (user.name ? `Hi, ${user.name.split(' ')[0]}` : 
+                    (user.phone ? `Hi, +91-${user.phone}` : 'Hi, User')) : 
+                    'Hi, Guest'}
+                </span>
               </div>
               {/* Profile button (mobile) */}
-              <button
-                aria-label="Profile"
-                onClick={openAuthModal}
-                className={`md:hidden p-2 ${isHome ? 'text-white' : 'text-gray-800'}`}
-              >
-                <User className="w-6 h-6" />
-              </button>
+              <div className="md:hidden relative" ref={profileRef}>
+                <button
+                  aria-label="Profile"
+                  onClick={handleProfileClick}
+                  className={`p-2 ${isHome ? 'text-white' : 'text-gray-800'}`}
+                >
+                  <User className="w-6 h-6" />
+                </button>
+                
+                {/* Mobile Profile Dropdown */}
+                <AnimatePresence>
+                  {isProfileOpen && user && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
+                    >
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {user.name || `+91-${user.phone}`}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {user.email || 'Welcome back!'}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               {isHome && (
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
