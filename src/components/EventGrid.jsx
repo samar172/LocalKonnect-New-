@@ -15,7 +15,7 @@ const otherServices = [
     date: '2025-04-20',
     time: '10:00',
     venue: 'City Sports Complex',
-    location: 'Mumbai',
+    location: 'Bikaner',
     price: 500,
     originalPrice: 800,
     discount: 38,
@@ -34,7 +34,7 @@ const otherServices = [
     date: '2025-04-18',
     time: '11:00',
     venue: 'Serenity Spa & Salon',
-    location: 'Mumbai',
+    location: 'Bikaner',
     price: 3500,
     originalPrice: 5000,
     discount: 30,
@@ -53,7 +53,7 @@ const otherServices = [
     date: '2025-04-22',
     time: '14:00',
     venue: 'Aqua World',
-    location: 'Mumbai',
+    location: 'Bikaner',
     price: 800,
     image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
     description: 'Enjoy full day access to our Olympic-sized swimming pool and other aquatic facilities.',
@@ -165,7 +165,7 @@ const EventGrid = () => {
   const filteredServices = useMemo(() => {
     return otherServices.filter(service => {
       const matchesSearch = service.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         service.location.toLowerCase().includes(searchQuery.toLowerCase());
+        service.location.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesSearch;
     });
   }, [searchQuery]);
@@ -232,7 +232,7 @@ const EventGrid = () => {
                   ))}
                 </div>
               </div>
-              
+
               {/* Desktop Grid */}
               <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {filteredEvents.map((event, index) => (
@@ -254,7 +254,7 @@ const EventGrid = () => {
                 <p className="text-gray-600 mb-6">
                   Try adjusting your search criteria or explore different categories.
                 </p>
-                <button 
+                <button
                   onClick={() => window.location.reload()}
                   className="bg-brand-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-brand-accent transition-colors"
                 >
@@ -266,7 +266,7 @@ const EventGrid = () => {
         </div>
 
         {/* Other Services Section */}
-        
+
       </div>
     </section>
   );

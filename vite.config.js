@@ -2,8 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-// https://vitejs.dev/config/
 export default defineConfig({
+  base: "/", // ✅ REQUIRED for subdomains
   plugins: [react()],
   resolve: {
     alias: {
@@ -13,7 +13,6 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    // host: true, // This exposes the server on your local network
     host: "0.0.0.0",
     allowedHosts: [
       "403f71b0d6ad.ngrok-free.app",
@@ -25,7 +24,7 @@ export default defineConfig({
     ],
   },
   build: {
-    outDir: "build",
+    outDir: "build", // ✅ OK
     sourcemap: true,
   },
 });

@@ -60,22 +60,22 @@ const TicketSelectionPage = () => {
     const dateRangeAttr = event.attributes?.find(attr =>
       attr.categoryAttribute?.attributeKey === 'event_date'
     );
-    
+
     // Get time range from attributes
     const timeRange = event.attributes?.find(attr =>
       attr.categoryAttribute?.attributeKey === 'event_time'
     )?.value?.split(',').map(t => t.trim()) || [];
-    
+
     const location = event.attributes?.find(attr =>
       attr.categoryAttribute?.attributeKey === 'event_location'
     )?.value;
-    
+
     let availableDates = [];
     if (dateRangeAttr?.value) {
       try {
         const [startDateStr, endDateStr] = dateRangeAttr.value.split(',').map(s => s.trim());
         console.log('Date range from API:', { startDateStr, endDateStr });
-        
+
         // Parse the dates in day-month-year format
         const parseCustomDate = (dateStr) => {
           const [day, month, year] = dateStr.split('-').map(Number);
@@ -83,10 +83,10 @@ const TicketSelectionPage = () => {
           console.log('Parsed date:', { input: dateStr, output: date });
           return date;
         };
-        
+
         const startDate = parseCustomDate(startDateStr);
         const endDate = parseCustomDate(endDateStr);
-        
+
         if (isValid(startDate) && isValid(endDate)) {
           let currentDate = new Date(startDate);
           while (currentDate <= endDate) {
@@ -200,8 +200,8 @@ const TicketSelectionPage = () => {
       .filter(([, quantity]) => quantity > 0)
       .map(([tierId, quantity]) => {
         const tier = parsedEvent.ticketTiers.find(t => t.id === tierId);
-        return { 
-          ...tier, 
+        return {
+          ...tier,
           quantity,
           pricePerTicket: parseFloat(tier.price),
           totalPrice: parseFloat(tier.price) * quantity
@@ -211,19 +211,25 @@ const TicketSelectionPage = () => {
     navigate(`/book/${id}`, {
       state: {
         event: {
-          id: parsedEvent.id,
-          title: parsedEvent.title,
+          id: event.id,
+          title: event.name || parsedEvent.title,
           venue: parsedEvent.venue,
           date: selectedDate,
           time: selectedTime,
-          image: parsedEvent.thumbnail || parsedEvent.image,
-          description: parsedEvent.description
+          image: event.thumbnailFiles?.[0]?.url || parsedEvent.thumbnail || parsedEvent.image,
+          description: parsedEvent.description,
+          // Include required fields for booking API
+          categoryId: event.categoryId,
+          providerId: event.providerId,
+          providerServiceId: event.id,
         },
         selectedTickets,
         totalAmount,
         totalItems,
         selectedDate,
-        selectedTime
+        selectedTime,
+        // Include raw event for additional data
+        rawEvent: event
       }
     });
   };
@@ -356,29 +362,7 @@ const TicketSelectionPage = () => {
                     </button>
                   ))}
                 </div>
-              </motion.div>
-
-              {availableTimes.length > 0 && (
-                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-                  <h2 className="text-xl font-bold text-gray-800 mb-3 flex items-center">
-                    <Clock className="w-5 h-5 mr-2 text-brand-secondary" />
-                    Select Time
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {availableTimes.map((time) => (
-                      <button
-                        key={time}
-                        onClick={() => setSelectedTime(time)}
-                        className={`px-4 py-2 rounded-lg border-2 font-medium transition-colors text-xs sm:text-sm md:text-base
-                          ${selectedTime === time ? 'bg-brand-secondary border-brand-secondary text-white' : 'border-gray-300 hover:border-brand-secondary'}
-                        `}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
+              </motion.div> 
             </div>
 
             <div className="lg:col-span-2">

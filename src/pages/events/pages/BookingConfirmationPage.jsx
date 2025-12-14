@@ -1,52 +1,99 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle2 } from 'lucide-react';
-import { format } from 'date-fns';
-import QRCode from 'react-qr-code';
+import { CheckCircle2, Calendar, MapPin } from 'lucide-react';
+import { format, parseISO, isValid } from 'date-fns';
+import QRCode from 'qrcode';
 import { useEvents } from '@/context/EventContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 const BookingConfirmationPage = () => {
   const navigate = useNavigate();
-  const { bookingDetails, events } = useEvents();
+  const location = useLocation();
+  const { bookingDetails: contextBookingDetails } = useEvents();
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
+
+  // Prefer navigation state, fallback to context
+  const bookingDetails = location.state || contextBookingDetails;
+
+  // Generate QR code as data URL
+  const generateQRCode = async (bookingId) => {
+    try {
+      const data = await QRCode.toDataURL(String(bookingId));
+      return data;
+    } catch (err) {
+      console.error('Error generating QR code:', err);
+      return '';
+    }
+  };
 
   useEffect(() => {
     // If there are no booking details, redirect to homepage
     if (!bookingDetails) {
       navigate('/');
+      return;
     }
+
+    // Generate QR code when booking details are available
+    const generateQR = async () => {
+      const bookingId = bookingDetails.bookingId;
+      if (bookingId) {
+        const qrData = await generateQRCode(bookingId);
+        setQrCodeDataUrl(qrData);
+      }
+    };
+
+    generateQR();
   }, [bookingDetails, navigate]);
 
   if (!bookingDetails) {
     return null; // Render nothing while redirecting
   }
 
-  const event = events.find(e => e.id === bookingDetails.eventId);
+  // Get event from navigation state
+  const event = bookingDetails.event;
 
   if (!event) {
-    // Handle case where event is not found (should not happen in normal flow)
+    // Handle case where event is not found
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <div className="flex-1 flex items-center justify-center">
-          <p>Error: Event details not found.</p>
+        <div className="flex-1 flex flex-col items-center justify-center px-4">
+          <p className="text-gray-600 mb-4">Error: Event details not found.</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Go to Home
+          </button>
         </div>
         <Footer />
       </div>
     );
   }
 
-  const eventDate = new Date(event.date);
-  const formattedDateTime = format(eventDate, 'EEEE, d MMM | p');
-  
-  const qrValue = JSON.stringify({
-    bookingId: bookingDetails.bookingId,
-    eventId: event.id,
-    name: bookingDetails?.contactInfo?.name,
-    tickets: bookingDetails.tickets
-  });
+  // Parse the date - handle both ISO string and custom format
+  const parseEventDate = (dateStr) => {
+    if (!dateStr) return null;
+    // Try ISO format first
+    const isoDate = parseISO(dateStr);
+    if (isValid(isoDate)) return isoDate;
+    // Try parsing as Date object
+    const dateObj = new Date(dateStr);
+    if (isValid(dateObj)) return dateObj;
+    return null;
+  };
+
+  const eventDate = parseEventDate(event.date || bookingDetails.selectedDate);
+  const formattedDateTime = eventDate
+    ? `${format(eventDate, 'EEEE, d MMM yyyy')}${event.time ? ` | ${event.time}` : ''}`
+    : 'Date not available';
+
+  // Calculate total tickets
+  const ticketCount = Array.isArray(bookingDetails.tickets)
+    ? bookingDetails.tickets.reduce((sum, t) => sum + (t.quantity || 1), 0)
+    : bookingDetails.tickets || 1;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100">
@@ -62,50 +109,86 @@ const BookingConfirmationPage = () => {
           <div className="text-center mb-8">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h1 className="text-3xl font-bold text-gray-900">
-              Booking confirmed
+              Booking Confirmed!
             </h1>
+            <p className="text-gray-600 mt-2">Your tickets have been successfully booked</p>
           </div>
 
           {/* Event Summary */}
           <div className="flex items-center space-x-4 mb-8">
-            <img src={event.image} alt={event.title} className="w-20 h-28 object-cover rounded-lg" />
+            {event.image && (
+              <img src={event.image} alt={event.title} className="w-20 h-28 object-cover rounded-lg" />
+            )}
             <div>
-              <h2 className="text-xl font-bold text-gray-800">{event.title}</h2>
-              <p className="text-gray-600">{event.tags?.join(' | ')}</p>
+              <h2 className="text-xl font-bold text-gray-800">{event.title || 'Event'}</h2>
+              {event.venue && (
+                <div className="flex items-center text-gray-600 mt-1">
+                  <MapPin className="w-4 h-4 mr-1" />
+                  <span>{event.venue}</span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Ticket Details */}
           <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
             <div className="border-b border-gray-200 pb-4 mb-4">
-              <p className="text-sm text-gray-500">Booking ID: {bookingDetails.bookingId}</p>
-              <p className="text-sm text-gray-500">Booking code: {bookingDetails.bookingCode}</p>
+              {bookingDetails.bookingId && (
+                <p className="text-sm text-gray-500">Booking ID: {bookingDetails.bookingId}</p>
+              )}
+              {bookingDetails.bookingCode && (
+                <p className="text-sm text-gray-500">Booking Code: {bookingDetails.bookingCode}</p>
+              )}
             </div>
-            
-            <p className="font-semibold text-gray-800 mb-6">{formattedDateTime}</p>
+
+            <div className="flex items-center text-gray-700 mb-4">
+              <Calendar className="w-4 h-4 mr-2 text-blue-500" />
+              <p className="font-semibold">{formattedDateTime}</p>
+            </div>
 
             <div className="flex items-center space-x-6 mb-6">
               <div className="bg-white p-2 border rounded-lg">
-                <QRCode value={qrValue} size={80} />
+                {qrCodeDataUrl ? (
+                  <img
+                    src={qrCodeDataUrl}
+                    alt="Booking QR Code"
+                    className="w-24 h-24"
+                  />
+                ) : (
+                  <div className="w-24 h-24 flex items-center justify-center bg-gray-100">
+                    <span className="text-xs text-gray-400">Loading...</span>
+                  </div>
+                )}
               </div>
               <div>
-                <h3 className="font-bold text-lg text-gray-900">SCREEN 2</h3>
-                <p className="text-gray-600">{bookingDetails.tickets} ticket{bookingDetails.tickets > 1 ? 's' : ''}</p>
-                <p className="text-gray-600">CL-G8</p>
+                <p className="text-gray-600">{ticketCount} ticket{ticketCount > 1 ? 's' : ''}</p>
+                {bookingDetails.total && (
+                  <p className="text-lg font-bold text-gray-900 mt-1">Total: ₹{bookingDetails.total}</p>
+                )}
               </div>
             </div>
 
-            <p className="text-gray-700 font-medium">{event.venue}</p>
+            {event.venue && (
+              <div className="flex items-start text-gray-700">
+                <MapPin className="w-4 h-4 mr-2 mt-1 text-blue-500" />
+                <p className="font-medium">{event.venue}</p>
+              </div>
+            )}
           </div>
 
-          {/* Download App Banner */}
-          <div className="mt-8 bg-gradient-to-r from-purple-600 to-indigo-700 text-white rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold">Next steps</p>
-              <h3 className="text-xl font-bold">To view your tickets, download the app</h3>
-            </div>
-            <button className="mt-4 sm:mt-0 bg-white text-purple-700 font-bold py-2 px-6 rounded-lg shadow-md hover:bg-gray-100 transition-colors">
-              Download App
+          {/* Action Buttons */}
+          <div className="mt-8 flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={() => navigate('/')}
+              className="flex-1 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition-colors"
+            >
+              Back to Home
+            </button>
+            <button
+              onClick={() => navigate('/my-bookings')}
+              className="flex-1 bg-white text-blue-600 font-bold py-3 px-6 rounded-lg shadow-md border border-blue-600 hover:bg-blue-50 transition-colors"
+            >
+              View My Bookings
             </button>
           </div>
         </motion.div>

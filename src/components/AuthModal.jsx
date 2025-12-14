@@ -32,6 +32,76 @@ const AuthModal = () => {
     return {};
   });
 
+  const handleOtpChange = (element, index) => {
+    if (isNaN(element.value)) return false;
+    
+    const newOtp = [...otp];
+    newOtp[index] = element.value.substring(0, 1); // Only take the first character
+    setOtp(newOtp);
+
+    // Auto-focus to next input
+    if (element.value && index < OTP_LENGTH - 1 && otpInputRefs.current[index + 1]) {
+      otpInputRefs.current[index + 1].focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    // Move to previous input on backspace if current input is empty
+    if (e.key === 'Backspace' && !otp[index] && index > 0 && otpInputRefs.current[index - 1]) {
+      otpInputRefs.current[index - 1].focus();
+    }
+  };
+
+  const handlePhoneSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Basic phone number validation
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneNumber || !phoneRegex.test(phoneNumber)) {
+      setError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const endpoint = '/auth/m/login';
+      const requestData = { mobile: phoneNumber };
+      
+      console.log('Sending OTP to:', { endpoint, ...requestData });
+      
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}${endpoint}`,
+        requestData,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 30000
+        }
+      );
+
+      if (response.data.success) {
+        setStep('otp');
+        setCountdown(120); // Start 2-minute countdown
+        // Focus the first OTP input
+        setTimeout(() => {
+          if (otpInputRefs.current[0]) {
+            otpInputRefs.current[0].focus();
+          }
+        }, 100);
+      } else {
+        throw new Error(response.data.message || 'Failed to send OTP');
+      }
+    } catch (error) {
+      console.error('OTP request error:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to send OTP. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Check authentication status on mount and when the modal opens
   useEffect(() => {
     // Handle session expired message
@@ -102,8 +172,11 @@ const AuthModal = () => {
         localStorage.setItem('lk_auth_token', token);
         localStorage.setItem('lk-user', JSON.stringify(user));
         
-        // Call the login function from auth context
-        login(user);
+        // Call the login function from auth context with token included
+        login({
+          ...user,
+          token: token
+        });
         
         // Show success message
         toast.success('Login successful!');

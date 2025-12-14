@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import Garba1 from '../assets/images/Garba1.png';
-import Garba2 from '../assets/images/Garba2.png';
+import Garba1 from '../assets/images/NY.png';
+import Garba2 from '../assets/images/PK.png';
 import Garba3 from '../assets/images/Garba3.png';
-import GarbaMain from '../assets/images/garba.jpg';
+import GarbaMain from '../assets/images/garba.png';
 
 // Placeholder image URLs
 const sports1 = 'https://images.unsplash.com/photo-1543351611-58f69d7c1781?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
@@ -21,7 +21,7 @@ export const useEvents = () => {
 };
 
 export const EventProvider = ({ children }) => {
-  const [selectedLocation, setSelectedLocation] = useState('Mumbai');
+  const [selectedLocation, setSelectedLocation] = useState('Bikaner');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -36,7 +36,7 @@ export const EventProvider = ({ children }) => {
 
   const events = [
     // Sports Events
-    
+
     {
       id: '1',
       title: 'Sunburn Arena ft. Martin Garrix',
@@ -44,7 +44,7 @@ export const EventProvider = ({ children }) => {
       date: '2025-02-15',
       time: '20:00',
       venue: 'Phoenix Marketcity',
-      location: 'Mumbai',
+      location: 'Bikaner',
       price: 2500,
       originalPrice: 3000,
       discount: 17,
@@ -64,7 +64,7 @@ export const EventProvider = ({ children }) => {
       date: '2025-02-12',
       time: '19:30',
       venue: 'Canvas Laugh Club',
-      location: 'Mumbai',
+      location: 'Bikaner',
       price: 800,
       originalPrice: 1000,
       discount: 20,
@@ -83,7 +83,7 @@ export const EventProvider = ({ children }) => {
       date: '2025-02-20',
       time: '18:00',
       venue: 'Mahalaxmi Racecourse',
-      location: 'Mumbai',
+      location: 'Bikaner',
       price: 1200,
       image: Garba2,
       description: 'Indulge in culinary delights from renowned chefs and premium wines from around the world.',
@@ -100,7 +100,7 @@ export const EventProvider = ({ children }) => {
       date: '2025-02-18',
       time: '14:00',
       venue: 'Kala Ghoda Art District',
-      location: 'Mumbai',
+      location: 'Bikaner',
       price: 1500,
       originalPrice: 2000,
       discount: 25,
@@ -119,7 +119,7 @@ export const EventProvider = ({ children }) => {
       date: '2025-03-10',
       time: '05:30',
       venue: 'Marine Drive',
-      location: 'Mumbai',
+      location: 'Bikaner',
       price: 2500,
       image: sports1,
       description: 'Join the most prestigious marathon in India. Run through the iconic Marine Drive and support various charitable causes.',
@@ -136,7 +136,7 @@ export const EventProvider = ({ children }) => {
       date: '2025-04-15',
       time: '19:30',
       venue: 'Wankhede Stadium',
-      location: 'Mumbai',
+      location: 'Bikaner',
       price: 3500,
       originalPrice: 4000,
       discount: 12.5,
@@ -156,7 +156,7 @@ export const EventProvider = ({ children }) => {
       date: '2025-02-25',
       time: '10:00',
       venue: 'Taj Spa & Salon',
-      location: 'Mumbai',
+      location: 'Bikaner',
       price: 5000,
       originalPrice: 7500,
       discount: 33,
@@ -175,7 +175,7 @@ export const EventProvider = ({ children }) => {
       date: '2025-03-05',
       time: '14:00',
       venue: 'Lakme Salon',
-      location: 'Mumbai',
+      location: 'Bikaner',
       price: 3500,
       image: salon2,
       description: 'Learn professional bridal makeup techniques from top makeup artists. Perfect for brides-to-be and makeup enthusiasts.',

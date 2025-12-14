@@ -17,7 +17,7 @@ const HeroSection = () => {
     let cancelled = false;
     const fetchServices = async () => {
       try {
-        const result = await getAllServices(19);
+        const result = await getAllServices(7, 'active', 'approved');
         if (!cancelled && result?.success && Array.isArray(result?.data)) {
           const srv = result.data;
           // Enrich similar to EventsListPage
